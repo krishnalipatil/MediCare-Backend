@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.medicare.doctorapp.dto.DoctorRegisterRequest;
 import com.medicare.doctorapp.dto.PatientRegisterRequest;
+import com.medicare.doctorapp.dto.LoginRequest;
 import com.medicare.doctorapp.entity.Doctor;
 import com.medicare.doctorapp.entity.Patient;
 import com.medicare.doctorapp.entity.User;
@@ -43,7 +44,6 @@ public class AuthService {
         }
 
         User user = new User();
-
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -53,7 +53,6 @@ public class AuthService {
         User savedUser = userRepository.save(user);
 
         Doctor doctor = new Doctor();
-
         doctor.setUser(savedUser);
         doctor.setSpecialization(request.getSpecialization());
         doctor.setExperience(request.getExperience());
@@ -73,7 +72,6 @@ public class AuthService {
         }
 
         User user = new User();
-
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -83,12 +81,27 @@ public class AuthService {
         User savedUser = userRepository.save(user);
 
         Patient patient = new Patient();
-
         patient.setUser(savedUser);
         patient.setAge(request.getAge());
         patient.setGender(request.getGender());
         patient.setAddress(request.getAddress());
 
         return patientRepository.save(patient);
+    }
+
+    // User Login
+    public User login(LoginRequest request) {
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(
+                request.getPassword(),
+                user.getPassword())) {
+
+            throw new RuntimeException("Invalid email or password");
+        }
+
+        return user;
     }
 }
