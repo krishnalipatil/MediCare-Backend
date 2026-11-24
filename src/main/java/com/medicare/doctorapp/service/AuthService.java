@@ -8,10 +8,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.medicare.doctorapp.dto.DoctorRegisterRequest;
 import com.medicare.doctorapp.dto.PatientRegisterRequest;
 import com.medicare.doctorapp.dto.LoginRequest;
+
 import com.medicare.doctorapp.entity.Doctor;
 import com.medicare.doctorapp.entity.Patient;
 import com.medicare.doctorapp.entity.User;
+
 import com.medicare.doctorapp.enums.Role;
+
 import com.medicare.doctorapp.repository.DoctorRepository;
 import com.medicare.doctorapp.repository.PatientRepository;
 import com.medicare.doctorapp.repository.UserRepository;
@@ -24,10 +27,11 @@ public class AuthService {
     private final PatientRepository patientRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public AuthService(UserRepository userRepository,
-                       DoctorRepository doctorRepository,
-                       PatientRepository patientRepository,
-                       PasswordEncoder passwordEncoder) {
+    public AuthService(
+            UserRepository userRepository,
+            DoctorRepository doctorRepository,
+            PatientRepository patientRepository,
+            PasswordEncoder passwordEncoder) {
 
         this.userRepository = userRepository;
         this.doctorRepository = doctorRepository;
@@ -44,6 +48,7 @@ public class AuthService {
         }
 
         User user = new User();
+
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -52,7 +57,16 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
+        // Check whether password was encoded correctly
+        boolean checkPassword = passwordEncoder.matches(
+                request.getPassword(),
+                savedUser.getPassword()
+        );
+
+        System.out.println("Doctor Registration Password Check: " + checkPassword);
+
         Doctor doctor = new Doctor();
+
         doctor.setUser(savedUser);
         doctor.setSpecialization(request.getSpecialization());
         doctor.setExperience(request.getExperience());
@@ -72,6 +86,7 @@ public class AuthService {
         }
 
         User user = new User();
+
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -80,7 +95,16 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
+        // Check whether password was encoded correctly
+        boolean checkPassword = passwordEncoder.matches(
+                request.getPassword(),
+                savedUser.getPassword()
+        );
+
+        System.out.println("Patient Registration Password Check: " + checkPassword);
+
         Patient patient = new Patient();
+
         patient.setUser(savedUser);
         patient.setAge(request.getAge());
         patient.setGender(request.getGender());
@@ -92,13 +116,25 @@ public class AuthService {
     // User Login
     public User login(LoginRequest request) {
 
+        System.out.println("Entered Email: " + request.getEmail());
+
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+                .orElseThrow(() -> {
+                    System.out.println("Email not found!");
+                    return new RuntimeException("Invalid email or password");
+                });
 
-        if (!passwordEncoder.matches(
+        System.out.println("User Found: " + user.getName());
+        System.out.println("User Role: " + user.getRole());
+
+        boolean passwordMatch = passwordEncoder.matches(
                 request.getPassword(),
-                user.getPassword())) {
+                user.getPassword()
+        );
 
+        System.out.println("Password Match: " + passwordMatch);
+
+        if (!passwordMatch) {
             throw new RuntimeException("Invalid email or password");
         }
 
