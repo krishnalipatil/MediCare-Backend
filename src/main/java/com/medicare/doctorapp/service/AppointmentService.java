@@ -1,3 +1,4 @@
+
 package com.medicare.doctorapp.service;
 
 import java.time.LocalDate;
@@ -34,10 +35,6 @@ public class AppointmentService {
     // Book Appointment
     public Appointment bookAppointment(AppointmentRequest request) {
 
-        System.out.println("Patient ID: " + request.getPatientId());
-        System.out.println("Doctor ID: " + request.getDoctorId());
-
-
         Patient patient = patientRepository.findById(request.getPatientId())
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
 
@@ -61,6 +58,7 @@ public class AppointmentService {
             throw new RuntimeException("Please enter appointment reason");
         }
 
+        // Check whether the selected slot is already booked
         boolean slotExists =
                 appointmentRepository.existsByDoctor_IdAndAppointmentDateAndAppointmentTime(
                         doctor.getId(),
@@ -86,22 +84,32 @@ public class AppointmentService {
 
     // Get All Appointments
     public List<Appointment> getAllAppointments() {
+
         return appointmentRepository.findAll();
     }
 
     // Get Appointment By ID
     public Appointment getAppointmentById(Long id) {
+
         return appointmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
     }
-    
- // Update Appointment Status
-    public Appointment updateAppointmentStatus(Long id, AppointmentStatus status) {
+
+    // Get Appointments By Patient ID
+    public List<Appointment> getPatientAppointments(Long patientId) {
+
+        return appointmentRepository.findByPatient_Id(patientId);
+    }
+
+    // Approve or Reject Appointment
+    public Appointment updateAppointmentStatus(
+            Long id, AppointmentStatus status) {
 
         Appointment appointment = getAppointmentById(id);
 
         if (appointment.getStatus() != AppointmentStatus.PENDING) {
-            throw new RuntimeException("Only pending appointments can be updated");
+            throw new RuntimeException(
+                    "Only pending appointments can be updated");
         }
 
         if (status != AppointmentStatus.APPROVED &&
@@ -113,9 +121,8 @@ public class AppointmentService {
 
         return appointmentRepository.save(appointment);
     }
-    
-    
- // Cancel Appointment
+
+    // Cancel Appointment
     public Appointment cancelAppointment(Long id) {
 
         Appointment appointment = getAppointmentById(id);
@@ -123,7 +130,9 @@ public class AppointmentService {
         if (appointment.getStatus() == AppointmentStatus.CANCELLED ||
                 appointment.getStatus() == AppointmentStatus.REJECTED ||
                 appointment.getStatus() == AppointmentStatus.COMPLETED) {
-            throw new RuntimeException("This appointment cannot be cancelled");
+
+            throw new RuntimeException(
+                    "This appointment cannot be cancelled");
         }
 
         appointment.setStatus(AppointmentStatus.CANCELLED);

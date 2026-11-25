@@ -1,3 +1,4 @@
+
 package com.medicare.doctorapp.repository;
 
 import java.time.LocalDate;
@@ -8,13 +9,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.medicare.doctorapp.entity.Appointment;
 
-public interface AppointmentRepository  extends  JpaRepository<Appointment,Long> {
-	boolean existsByDoctor_IdAndAppointmentDateAndAppointmentTime(
+public interface AppointmentRepository
+        extends JpaRepository<Appointment, Long> {
+
+    boolean existsByDoctor_IdAndAppointmentDateAndAppointmentTime(
             Long doctorId,
             LocalDate appointmentDate,
             LocalTime appointmentTime
     );
 
-  List<Appointment> findByPatient_Id(Long patientId);
-
+    List<Appointment> findByPatient_Id(Long patientId);
 }

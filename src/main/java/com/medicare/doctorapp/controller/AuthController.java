@@ -1,7 +1,9 @@
 
 package com.medicare.doctorapp.controller;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,9 +12,12 @@ import org.springframework.web.bind.annotation.*;
 import com.medicare.doctorapp.dto.DoctorRegisterRequest;
 import com.medicare.doctorapp.dto.PatientRegisterRequest;
 import com.medicare.doctorapp.dto.LoginRequest;
+
 import com.medicare.doctorapp.entity.Doctor;
 import com.medicare.doctorapp.entity.Patient;
 import com.medicare.doctorapp.entity.User;
+
+import com.medicare.doctorapp.repository.PatientRepository;
 import com.medicare.doctorapp.service.AuthService;
 
 @RestController
@@ -21,9 +26,14 @@ import com.medicare.doctorapp.service.AuthService;
 public class AuthController {
 
     private final AuthService authService;
+    private final PatientRepository patientRepository;
 
-    public AuthController(AuthService authService) {
+    public AuthController(
+            AuthService authService,
+            PatientRepository patientRepository) {
+
         this.authService = authService;
+        this.patientRepository = patientRepository;
     }
 
     // Doctor Registration
@@ -58,12 +68,30 @@ public class AuthController {
 
             User user = authService.login(request);
 
-            Map<String, Object> response = Map.of(
-                    "id", user.getId(),
-                    "name", user.getName(),
-                    "email", user.getEmail(),
-                    "role", user.getRole()
-            );
+            Map<String, Object> response = new HashMap<>();
+
+            response.put("id", user.getId());
+            response.put("name", user.getName());
+            response.put("email", user.getEmail());
+            response.put("role", user.getRole());
+
+            // Fetch Patient ID using User ID
+            if (user.getRole().toString().equals("PATIENT")) {
+
+                Optional<Patient> patient =
+                        patientRepository.findByUser_Id(user.getId());
+
+                if (patient.isEmpty()) {
+                    return ResponseEntity
+                            .status(HttpStatus.NOT_FOUND)
+                            .body(Map.of(
+                                    "message",
+                                    "Patient record not found for this user"
+                            ));
+                }
+
+                response.put("patientId", patient.get().getId());
+            }
 
             return ResponseEntity.ok(response);
 
