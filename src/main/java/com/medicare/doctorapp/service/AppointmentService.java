@@ -21,15 +21,18 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
+    private final EmailService emailService;
 
     public AppointmentService(
             AppointmentRepository appointmentRepository,
             DoctorRepository doctorRepository,
-            PatientRepository patientRepository) {
+            PatientRepository patientRepository,
+            EmailService emailService) {
 
         this.appointmentRepository = appointmentRepository;
         this.doctorRepository = doctorRepository;
         this.patientRepository = patientRepository;
+        this.emailService = emailService;
     }
 
     // Book Appointment
@@ -47,6 +50,7 @@ public class AppointmentService {
 
         if (request.getAppointmentDate() == null ||
                 request.getAppointmentDate().isBefore(LocalDate.now())) {
+
             throw new RuntimeException("Please select a valid appointment date");
         }
 
@@ -79,25 +83,43 @@ public class AppointmentService {
         appointment.setReason(request.getReason());
         appointment.setStatus(AppointmentStatus.PENDING);
 
-        return appointmentRepository.save(appointment);
+        // Save appointment in database
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+
+        // Send Appointment Confirmation Email
+        try {
+
+            emailService.sendAppointmentConfirmation(
+                    patient.getUser().getEmail(),
+                    patient.getUser().getName(),
+                    doctor.getUser().getName(),
+                    request.getAppointmentDate().toString(),
+                    request.getAppointmentTime().toString(),
+                    savedAppointment.getStatus().toString()
+            );
+
+        } catch (Exception e) {
+
+            // Email failure should not cancel the appointment
+            System.out.println("Unable to send confirmation email: " + e.getMessage());
+        }
+
+        return savedAppointment;
     }
 
     // Get All Appointments
     public List<Appointment> getAllAppointments() {
-
         return appointmentRepository.findAll();
     }
 
     // Get Appointment By ID
     public Appointment getAppointmentById(Long id) {
-
         return appointmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
     }
 
     // Get Appointments By Patient ID
     public List<Appointment> getPatientAppointments(Long patientId) {
-
         return appointmentRepository.findByPatient_Id(patientId);
     }
 
@@ -114,6 +136,7 @@ public class AppointmentService {
 
         if (status != AppointmentStatus.APPROVED &&
                 status != AppointmentStatus.REJECTED) {
+
             throw new RuntimeException("Invalid appointment status");
         }
 
